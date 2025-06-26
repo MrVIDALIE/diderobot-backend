@@ -5,58 +5,46 @@ require("dotenv").config();
 
 const app = express();
 
-// ✅ Autoriser uniquement ton frontend Netlify
 app.use(cors({
   origin: "https://diderobot.netlify.app",
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["POST"],
   allowedHeaders: ["Content-Type"]
 }));
 
 app.use(express.json());
 
 app.post("/api/chat", async (req, res) => {
+  const userMessage = req.body.message;
+
+  if (!userMessage) {
+    return res.status(400).json({ error: "Message utilisateur manquant." });
+  }
+
   try {
-    const userMessage = req.body.message;
-
-    if (!userMessage) {
-      return res.status(400).json({ error: "Message utilisateur manquant." });
-    }
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: "Tu es DideRobot, un assistant scolaire bienveillant pour aider les élèves de 4e et 3e à réviser. Tu poses des questions une par une, donnes des explications claires, proposes des quiz, aides à la compréhension, et tu encourages les élèves."
-          },
-          {
-            role: "user",
-            content: userMessage
-          }
-        ]
+        inputs: `### Élève : ${userMessage}\n\n### DideRobot :`
       })
     });
 
     const data = await response.json();
+    const reply = data?.[0]?.generated_text?.split("### DideRobot :")[1]?.trim();
 
-    if (!data.choices || !data.choices[0]) {
-      console.error("Réponse vide ou invalide d'OpenAI :", data);
-      return res.status(500).json({ error: "Réponse invalide d'OpenAI." });
+    if (!reply) {
+      return res.status(500).json({ error: "Réponse vide du modèle." });
     }
 
-    res.json(data);
+    res.json({ choices: [{ message: { content: reply } }] });
   } catch (err) {
-    console.error("Erreur serveur :", err);
-    res.status(500).json({ error: "Erreur interne du serveur", details: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la requête Hugging Face" });
   }
 });
 
-// ✅ PORT dynamique obligatoire pour Render
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Backend DideRobot en ligne sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Backend DideRobot (Hugging Face) actif sur le port ${PORT}`));
