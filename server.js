@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const app = express();
 
-// ✅ CORS : autoriser uniquement Netlify
+// ✅ Autoriser uniquement ton site Netlify à accéder à ce backend
 app.use(cors({
   origin: "https://diderobot.netlify.app",
   methods: ["GET", "POST", "OPTIONS"],
@@ -18,6 +18,10 @@ app.post("/api/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
 
+    if (!userMessage) {
+      return res.status(400).json({ error: "Message utilisateur manquant." });
+    }
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -29,7 +33,7 @@ app.post("/api/chat", async (req, res) => {
         messages: [
           {
             role: "system",
-            content: "Tu es DideRobot, un assistant scolaire bienveillant pour des élèves de 4e et 3e..."
+            content: "Tu es DideRobot, un assistant scolaire bienveillant pour aider les élèves de 4e et 3e à réviser. Tu poses des questions une par une et expliques avec clarté."
           },
           {
             role: "user",
@@ -42,15 +46,17 @@ app.post("/api/chat", async (req, res) => {
     const data = await response.json();
 
     if (!data.choices || !data.choices[0]) {
-      return res.status(500).json({ error: "Réponse mal formée de l'API OpenAI", data });
+      console.error("Réponse vide ou invalide :", data);
+      return res.status(500).json({ error: "Réponse invalide d'OpenAI." });
     }
 
     res.json(data);
   } catch (err) {
-    console.error("Erreur /api/chat :", err);
-    res.status(500).json({ error: "Erreur interne du serveur" });
+    console.error("Erreur serveur :", err);
+    res.status(500).json({ error: "Erreur interne du serveur", details: err.message });
   }
 });
 
-// 🚀 Démarrage
-app.listen(PORT, () => console.log(`✅ Backend DideRobot en ligne sur le port ${PORT}`));
+// ✅ Ne surtout pas oublier cette ligne pour Render !
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => co
