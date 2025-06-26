@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const app = express();
 
-// ✅ Autoriser uniquement ton site Netlify à accéder à ce backend
+// ✅ Autoriser uniquement ton frontend Netlify
 app.use(cors({
   origin: "https://diderobot.netlify.app",
   methods: ["GET", "POST", "OPTIONS"],
@@ -33,7 +33,7 @@ app.post("/api/chat", async (req, res) => {
         messages: [
           {
             role: "system",
-            content: "Tu es DideRobot, un assistant scolaire bienveillant pour aider les élèves de 4e et 3e à réviser. Tu poses des questions une par une et expliques avec clarté."
+            content: "Tu es DideRobot, un assistant scolaire bienveillant pour aider les élèves de 4e et 3e à réviser. Tu poses des questions une par une, donnes des explications claires, proposes des quiz, aides à la compréhension, et tu encourages les élèves."
           },
           {
             role: "user",
@@ -46,7 +46,7 @@ app.post("/api/chat", async (req, res) => {
     const data = await response.json();
 
     if (!data.choices || !data.choices[0]) {
-      console.error("Réponse vide ou invalide :", data);
+      console.error("Réponse vide ou invalide d'OpenAI :", data);
       return res.status(500).json({ error: "Réponse invalide d'OpenAI." });
     }
 
@@ -57,6 +57,6 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// ✅ Ne surtout pas oublier cette ligne pour Render !
+// ✅ PORT dynamique obligatoire pour Render
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => co
+app.listen(PORT, () => console.log(`✅ Backend DideRobot en ligne sur le port ${PORT}`));
