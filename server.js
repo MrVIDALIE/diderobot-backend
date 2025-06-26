@@ -4,38 +4,54 @@ const fetch = require("node-fetch");
 require("dotenv").config();
 
 const app = express();
+
+// ✅ CORS : autoriser uniquement Netlify
 app.use(cors({
-  origin: "https://diderobot.netlify.app"
+  origin: "https://diderobot.netlify.app",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
 }));
+
 app.use(express.json());
 
 app.post("/api/chat", async (req, res) => {
-  const userMessage = req.body.message;
+  try {
+    const userMessage = req.body.message;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "Tu es DideRobot, un coach de révision pour les élèves de 4e et 3e. Tu aides en Maths, Français, Histoire-Géo, SVT, Anglais, Physique-Chimie, Technologie. Tu es bienveillant, pédagogue, et poses des questions une par une. Tu donnes des conseils de révision, proposes des quiz, aides sans donner la réponse tout de suite. Tu ne réponds pas aux sujets hors scolaire et tu cites parfois Denis Diderot pour encourager."
-        },
-        {
-          role: "user",
-          content: userMessage
-        }
-      ]
-    })
-  });
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "Tu es DideRobot, un assistant scolaire bienveillant pour des élèves de 4e et 3e..."
+          },
+          {
+            role: "user",
+            content: userMessage
+          }
+        ]
+      })
+    });
 
-  const data = await response.json();
-  res.json(data);
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0]) {
+      return res.status(500).json({ error: "Réponse mal formée de l'API OpenAI", data });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error("Erreur /api/chat :", err);
+    res.status(500).json({ error: "Erreur interne du serveur" });
+  }
 });
 
+// 🚀 Démarrage
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`DideRobot backend en ligne sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Backend DideRobot en ligne sur le port ${PORT}`));
