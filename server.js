@@ -53,5 +53,4 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // 🚀 Démarrage
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Backend DideRobot en ligne sur le port ${PORT}`));
